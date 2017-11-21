@@ -1,0 +1,73 @@
+Proyecto de ejb's 3.1 preparado para ser desplegado en jboss. Se empaqueta en un .jar
+que forma parte de un .ear. Todo esto se construye mediante el build.xml del proyecto
+jsf ejbs.
+
+Necesitamos que haya un beans.xml vacío en META-INF para que el contenedor escanee las clases
+en busca de anotaciones. Utilizamos daos y seguridad. Hay definidos dos roles
+(ROLE_ADMIN y ROLE_GUEST) que son los únicos que pueden acceder a EmpleadosNegocioEJB.
+Además sólo ROLE_ADMIN puede invocar su método eliminaEmpleado. La seguridad se determina
+en el fichero jboss-ejb3.xml y mediante anotaciones en el propio ejb EmpleadosNegocioEJB
+(estos roles y sus usuarios están definidos a nivel de contenedor JBOSS, ver documento config jboss.txt).
+
+Si desplegáramos los ejb's en un .jar aparte de los clientes, necesitaríamos
+declarar los interfaces de negocio como @Remote, y no como @Local. Ahora mismo
+declaramos interfaces @Remote y @Local por cada ejb de sesión definido. Estos
+interfaces heredan del interfaz de negocio que declara la funcionalidad del ejb.
+
+Para que un cliente pueda acceder a un ejb remoto debe declararse de esta manera:
+
+	@EJB(mappedName = "java:global/ejb_empleados/calculator!made.empleados.ejbs.CalculatorRemoteBusiness")
+	CalculatorRemoteBusiness calculatorEjb;
+	
+	public void setCalculatorEJB(CalculatorRemoteBusiness calculatorEJB) {
+		this.calculatorEjb = calculatorEJB;
+	}
+
+Este mappedName es el nombre con el que se mapea el ejb al desplegarlo en jboss
+(el java:global)
+
+Sin embargo, si desplegamos el .jar dentro de un .ear (el proyecto jsf que hace 
+uso de esta librería de ejb's
+se despliega como un ear) accederíamos a los ejb's de forma local, de esta manera:
+
+	@EJB(name="empleadosNegocioEJB")
+	private EmpleadosNegocioLocal negocio;
+
+El proyecto jsf ejbs hace uso de los ejb's declarados aquí.
+
+Todos los ejb's declarados se componen de la implementación (clase acabada en
+EJB), el interfaz de negocio y dos interfaces (uno remoto y otro local) que heredan
+del de negocio. Un interfaz no puede ser local y remoto al mismo tiempo para un ejb.
+Los interfaces remoto y local se determinan mediante anotaciones en el ejb de
+implementación.
+
+* CalculatorEJB: bean stateless que implementa CalculatorNegocio y realiza
+una suma de la lista de enteros recibidos.
+
+* KeepTrackEJB: bean stateful que actualiza una propiedad interna sumando las
+cifras que le van llegando.
+
+* EmpleadosNegocioEJB: bean stateless que utiliza DAOEmpJPACMT para acceder a la bd
+mediante CMT o EmpDAOFake para acceder a una bd en memoria.
+Las transacciones las gestiona el contenedor a nivel de este ejb.
+
+* Empleado: bean de entidad que mapea sobre la tabla emp. Para poder utilizar
+JPA necesitamos definir un fichero persistence.xml. En este fichero definimos
+dos unidades de persistencia que asociamos al DS configurado en jboss,
+EmpleadosPUJTA que utiliza transacciones JPA y es
+utilizado por DAOEmpJPACMT y EmpleadosPULOCAL, utilizado por DAOEmpJPALocalTx
+y que utiliza transacciones locales.
+
+* DAOEmpJPACMT: DAO que usa CMT.
+
+La diferencia entre DAOEmpJPACMT y DAOEmpJPALocalTx es que
+en el primero las transacciones son gestionadas por el contenedor a nivel de ejbs
+de sesión mientras que el segundo gestiona sus propias transacciones con begins
+y commits explícitos; para ello, DAOEmpJPACMT utiliza la unidad de persistencia
+EmpleadosPUJTA y obtiene su EntityManager mediante inyección
+(@PersistenceContext(unitName="EmpleadosPUJTA")) mientras que el segundo utiliza la
+up EmpleadosPULOCAL y su EntityManager lo obtiene de forma explícita.
+
+DAOEmpJPACMT es el cdi por defecto, DAOEmpJPALocalTx y EmpDAOFake están calificados.
+A la hora de inyectar uno de estos daos a EmpleadosNegocioEJB (el fake o el cmt, creo
+que el localtx no se podría) si no especificamos un calificador se inyecta el cmt.

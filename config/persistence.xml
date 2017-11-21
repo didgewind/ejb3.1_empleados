@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+
+	<!-- Unidad de persistencia JTA para trabajar con session beans -->
+	<persistence-unit name="EmpleadosPUJTA"
+		transaction-type="JTA">
+		<jta-data-source>java:jboss/datasources/EmpleadosDS</jta-data-source>
+		<properties>
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
+			<!-- Descomentamos esta línea si queremos que se regenere la bd a partir 
+				de las entidades -->
+			<!-- <property name="hibernate.hbm2ddl.auto" value="create" /> -->
+		</properties>
+	</persistence-unit>
+<!-- Definimos una unidad de persistencia local para trabajar en local sin ejb de sesión -->
+    <persistence-unit name="EmpleadosPULOCAL" transaction-type="RESOURCE_LOCAL">
+        <non-jta-data-source>java:jboss/datasources/EmpleadosDS</non-jta-data-source>
+        <!-- Si no ponemos esta línea no es capaz de mapear la clase. ¿Quizás porque utiliza transacciones locales? -->
+        <class>made.empleados.model.Empleado</class>
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect" />
+            <!-- Descomentamos esta línea si queremos que se regenere la bd a partir de las entidades -->
+<!--        <property name="hibernate.hbm2ddl.auto" value="create" />-->
+        </properties>
+    </persistence-unit>
+</persistence>

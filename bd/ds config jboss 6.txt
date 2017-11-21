@@ -1,0 +1,38 @@
+Doc para configurar un ds en jboss 6 Y acceder a él desde jpa.
+
+La config del ds la tomamos de http://magnus-k-karlsson.blogspot.com.es/2012/08/how-to-install-mysql-datasource-on.html
+
+* Config de ds
+
+1 - Crear una carpeta $JBOSS_HOME/modules/com/mysql/main
+2 - Copiar el conector mysql a dicha carpeta
+3 - Crear también el fichero module.xml en dicha carpeta:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<module xmlns="urn:jboss:module:1.1" name="com.mysql">
+		<resources>
+			<resource-root path="mysql-connector-java-5.1.35.jar"/>
+		</resources>
+		<dependencies><module name="javax.api"/></dependencies>
+	</module>
+
+4 - Añadir el datasource y el driver al fichero standalone.xml de la carpeta
+$JBOSS_HOME/standalone/configuration:
+
+	<datasource jndi-name="java:jboss/datasources/EmpleadosDS" pool-name="EmpleadosDS" enabled="true" use-java-context="true">
+	    <connection-url>jdbc:mysql://localhost:3306/empleados_simple</connection-url>
+	    <driver>mysql</driver>
+	    <security>
+	        <user-name>maza</user-name>
+	        <password>maza</password>
+	    </security>
+	</datasource>
+	...
+	<drivers>
+		<driver name="mysql" module="com.mysql">
+		   <driver-class>com.mysql.jdbc.Driver</driver-class>
+		</driver>
+
+* Configuración en la app:
+
+El jta-datasource (o datasource, quizás) sería java:jboss/datasources/EmpleadosDS
